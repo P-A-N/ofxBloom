@@ -2,8 +2,8 @@
 
 |   |   |
 | ---- | ---- |
-| None |    |
-| Bloom |    |
+| Bloom |  ![ss](https://github.com/P-A-N/ofxBloom/blob/master/bloom.png)  |
+| None |  ![ss](https://github.com/P-A-N/ofxBloom/blob/master/none.png)  |
 
 
 ## Tested on
