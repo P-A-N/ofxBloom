@@ -1,0 +1,2 @@
+ofxBloom
+ofxGui
