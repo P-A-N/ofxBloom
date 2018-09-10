@@ -75,13 +75,13 @@ private:
 		blur_.end();
 
 		//Composite
+		ofEnableBlendMode(OF_BLENDMODE_ADD);
 		result_fbo_.begin();
 		ofClear(0, 255);
 		target_fbo_->draw(0, 0);
-		ofEnableBlendMode(OF_BLENDMODE_ADD);
 		blur_.draw();
-		ofDisableBlendMode();
 		result_fbo_.end();
+		ofDisableBlendMode();
 	}
 
 	// needed for programmable renderer
