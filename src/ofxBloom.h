@@ -60,7 +60,9 @@ public:
 	float& getThreshRef() { return thresh_; }
     
 	ofFbo& getResultFbo() { return result_fbo_; }
-	ofFbo getResultFbo() const { return result_fbo_; }
+	void draw() const { result_fbo_.draw(0, 0); }
+	void draw(int x, int y) const { result_fbo_.draw(x, y); }
+	void draw(int x, int y, int w, int h) const { result_fbo_.draw(x, y, w, h); }
     
 private:
 	void update(ofEventArgs& event) {
