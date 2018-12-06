@@ -48,7 +48,6 @@ public:
 		quad_.addVertex(ofVec3f(-1.0, 1.0, 0.0));
 		quad_.addTexCoord(ofVec2f(0.0f, 1.0f));
         
-		ofAddListener(ofEvents().update, this, &ofxBloom::update);
     }
     
     void setBrightness(const float brightness) { blur_.setBrightness(brightness); }
@@ -64,8 +63,8 @@ public:
 	void draw(int x, int y) const { result_fbo_.draw(x, y); }
 	void draw(int x, int y, int w, int h) const { result_fbo_.draw(x, y, w, h); }
     
-private:
-	void update(ofEventArgs& event) {
+
+	void process() {
 		//Blur Threshold
 		blur_.begin();
 		ofClear(0, 255);
@@ -86,6 +85,7 @@ private:
 		ofDisableBlendMode();
 	}
 
+private:
 	// needed for programmable renderer
 	std::string generateThreasholdVert() {
 		std::stringstream src;
