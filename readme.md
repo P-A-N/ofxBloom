@@ -7,8 +7,8 @@
 
 
 ## Tested on
-* 0.9.8 and 0.10.0
-* OpenGL 3.3 ~ 4.5 (it doesn't work on OpenGL ~2.1)
+* 0.9.8 and 0.10.1
+* OpenGL 1.2 ~ 4.5
 * Both of Mac and Windows
 
 
