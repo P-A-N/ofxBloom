@@ -24,8 +24,9 @@ void ofApp::update() {
 	float hue = 0;
 	for (int i = 0; i < 180; i += 30) {
 		ofSetColor(ofColor::fromHsb(hue, 360, 360));
-		ofDrawCircle(1280 * 0.5 + 100 * sin(6 * time + PI + (DEG_TO_RAD * i)),
-			720 * 0.5 + 100 * cos(8 * time + (DEG_TO_RAD * i)),
+		ofDrawCircle(
+			1280 * 0.5 + 100 * sin(6 * time + PI + (DEG_TO_RAD * i)),
+			720  * 0.5 + 100 * cos(8 * time + (DEG_TO_RAD * i)),
 			10,
 			10);
 		hue += 30;
@@ -35,11 +36,12 @@ void ofApp::update() {
 	bloom->setBrightness(brightness);
 	bloom->setScale(scale);
 	bloom->setThreshold(thresh);
+	bloom->process();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-	bloom->getResultFbo().draw(0, 0);
+	bloom->draw();
 	gui.draw();
 }
 

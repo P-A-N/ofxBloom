@@ -5,7 +5,9 @@
 class ofxBloom {
 public:
 	ofxBloom(int width, int height, ofFbo* src_fbo)
-		: target_fbo_(src_fbo)
+		: width_(width)
+		, height_(height)
+		, target_fbo_(src_fbo)
 		, scale_(32)
 		, shape_(0.2f)
 		, passes_(4)
@@ -14,39 +16,58 @@ public:
 		, brightness_(0.2f)
 	{	
         ofDisableArbTex();
-		result_fbo_.allocate(width, height, GL_RGBA16F);
+		result_fbo_.allocate(width, height, GL_RGBA32F);
 		result_fbo_.begin(); ofClear(0, 0); result_fbo_.end();
         ofEnableArbTex();
         
 		blur_.setup(width, height, 10, .2, 4);
         
-        std::string blurthreshSource = generateThreasholdFrag();
-        if(ofGetLogLevel() == OF_LOG_VERBOSE) {
-            cout << "ofxBlur is loading blur shader:" << endl << blurthreshSource << endl;
-        }
         if (ofIsGLProgrammableRenderer()){
-            std::string ThresholdPass = generateThreasholdVert();
-            if(ofGetLogLevel() == OF_LOG_VERBOSE) {
-                cout << "ofxBlur is loading blur vertex shader:" << endl << ThresholdPass << endl;
-            }
-			threshold_shader_.setupShaderFromSource(GL_VERTEX_SHADER, ThresholdPass);
-        }
-		threshold_shader_.setupShaderFromSource(GL_FRAGMENT_SHADER, blurthreshSource);
-        
-        if (ofIsGLProgrammableRenderer()){
+			std::string threshold_fragment_source = generateThreasholdFrag();
+            std::string threshold_vertex_source = generateThreasholdVert();
+            
+			threshold_shader_.setupShaderFromSource(GL_VERTEX_SHADER, threshold_vertex_source);
+			threshold_shader_.setupShaderFromSource(GL_FRAGMENT_SHADER, threshold_fragment_source);
 			threshold_shader_.bindDefaults();
+			threshold_shader_.linkProgram();
+
+			quad_.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
+			quad_.addVertex(ofVec3f(1.0, 1.0, 0.0));
+			quad_.addTexCoord(ofVec2f(1.0f, 1.0f));
+			quad_.addVertex(ofVec3f(1.0, -1.0, 0.0));
+			quad_.addTexCoord(ofVec2f(1.0f, 0.0f));
+			quad_.addVertex(ofVec3f(-1.0, -1.0, 0.0));
+			quad_.addTexCoord(ofVec2f(0.0f, 0.0f));
+			quad_.addVertex(ofVec3f(-1.0, 1.0, 0.0));
+			quad_.addTexCoord(ofVec2f(0.0f, 1.0f));
         }
-		threshold_shader_.linkProgram();
+		else {
+			std::stringstream src;
+
+			src << "#version 120\n";
+			src << "uniform sampler2D src;\n";
+			src << "uniform float thresh;\n";
+			src << "void main() {;\n";
+			src << "\tvec2 st = gl_TexCoord[0].st;\n";
+			src << "\tgl_FragColor = max(texture2D(src, st) - vec4(vec3(thresh), 0.0), vec4(0.0));\n";
+			src << "}\n";
+
+			std::string threshold_fragment_source = src.str();
+			threshold_shader_.setupShaderFromSource(GL_FRAGMENT_SHADER, threshold_fragment_source);
+			threshold_shader_.linkProgram();
+
+			quad_.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
+			quad_.addVertex(ofVec3f(width_, 0.f, 0.f));
+			quad_.addTexCoord(ofVec2f(1.f, 1.f));
+			quad_.addVertex(ofVec3f(width_, height_, 0.f));
+			quad_.addTexCoord(ofVec2f(1.f, 0.f));
+			quad_.addVertex(ofVec3f(0, height_, 0.0));
+			quad_.addTexCoord(ofVec2f(0.f, 0.f));
+			quad_.addVertex(ofVec3f(0.f, 0.f, 0.f));
+			quad_.addTexCoord(ofVec2f(0.f, 1.f));
+		}
         
-		quad_.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
-		quad_.addVertex(ofVec3f(1.0, 1.0, 0.0));
-		quad_.addTexCoord(ofVec2f(1.0f, 1.0f));
-		quad_.addVertex(ofVec3f(1.0, -1.0, 0.0));
-		quad_.addTexCoord(ofVec2f(1.0f, 0.0f));
-		quad_.addVertex(ofVec3f(-1.0, -1.0, 0.0));
-		quad_.addTexCoord(ofVec2f(0.0f, 0.0f));
-		quad_.addVertex(ofVec3f(-1.0, 1.0, 0.0));
-		quad_.addTexCoord(ofVec2f(0.0f, 1.0f));
+
         
     }
     
@@ -54,17 +75,15 @@ public:
     void setScale(const float scale) { blur_.setScale(scale); }
     void setThreshold(const float thresh) { thresh_ = thresh; }
 
-	float& getBrightnessRef() { return brightness_; }
-	float& getScaleRef() { return scale_; }
-	float& getThreshRef() { return thresh_; }
-    
 	ofFbo& getResultFbo() { return result_fbo_; }
 	void draw() const { result_fbo_.draw(0, 0); }
 	void draw(int x, int y) const { result_fbo_.draw(x, y); }
 	void draw(int x, int y, int w, int h) const { result_fbo_.draw(x, y, w, h); }
-    
 
 	void process() {
+		ofPushStyle();
+		ofDisableDepthTest();
+
 		//Blur Threshold
 		blur_.begin();
 		ofClear(0, 255);
@@ -83,15 +102,14 @@ public:
 		blur_.draw();
 		result_fbo_.end();
 		ofDisableBlendMode();
+		ofPopStyle();
 	}
 
 private:
-	// needed for programmable renderer
 	std::string generateThreasholdVert() {
 		std::stringstream src;
 
 		src << "#version 410\n";
-		src << "uniform mat4 modelViewProjectionMatrix;\n";
 		src << "in vec4 position;\n";
 		src << "in vec2 texcoord;\n";
 		src << "out vec2 v_texcoord;\n";
@@ -122,8 +140,9 @@ private:
 		return src.str();
 	}
 
-
     ofShader threshold_shader_;
+	int width_;
+	int height_;
 	float brightness_;
     float thresh_;
     ofMesh quad_;
