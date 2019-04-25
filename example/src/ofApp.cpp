@@ -7,7 +7,7 @@ void ofApp::setup() {
 	fbo.allocate(ofGetWidth(), ofGetHeight());
 	ofEnableArbTex();
 
-	bloom = std::make_shared<ofxBloom>(ofGetWidth(), ofGetHeight(), &fbo);
+	bloom.setup(ofGetWidth(), ofGetHeight(), fbo);
 
 	gui.setup();
 	gui.add(scale.setup("Scale", 2.3f, 0.1f, 16.f));
@@ -33,15 +33,15 @@ void ofApp::update() {
 	}
 	fbo.end();
 
-	bloom->setBrightness(brightness);
-	bloom->setScale(scale);
-	bloom->setThreshold(thresh);
-	bloom->process();
+	bloom.setBrightness(brightness);
+	bloom.setScale(scale);
+	bloom.setThreshold(thresh);
+	bloom.process();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-	bloom->draw();
+	bloom.draw();
 	gui.draw();
 }
 

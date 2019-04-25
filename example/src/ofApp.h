@@ -19,6 +19,6 @@ public:
 	ofxFloatSlider brightness;
 
 	float time;
-	std::shared_ptr<ofxBloom> bloom;
+	ofxBloom bloom;
 	ofFbo fbo;
 };

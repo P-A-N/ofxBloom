@@ -2,30 +2,39 @@
 #include "ofMain.h"
 #include "ofxBlur.h"
 
-class ofxBloom {
+class ofxBloom 
+{
 public:
-	ofxBloom(int width, int height, ofFbo* src_fbo)
-		: width_(width)
-		, height_(height)
-		, target_fbo_(src_fbo)
+	ofxBloom()
+		: width_(0.0f)
+		, height_(0.0f)
 		, scale_(32)
 		, shape_(0.2f)
 		, passes_(4)
 		, downsample_(0.5f)
 		, thresh_(0.1f)
 		, brightness_(0.2f)
-	{	
-        ofDisableArbTex();
+		, inialized(false)
+	{}
+
+	void setup(int width, int height, ofFbo& src_fbo) {
+		width_ = width;
+		height_ = height;
+		target_fbo_ = src_fbo;
+		inialized = true;
+
+		ofDisableArbTex();
 		result_fbo_.allocate(width, height, GL_RGBA32F);
 		result_fbo_.begin(); ofClear(0, 0); result_fbo_.end();
-        ofEnableArbTex();
-        
+		ofEnableArbTex();
+
 		blur_.setup(width, height, 10, .2, 4);
-        
-        if (ofIsGLProgrammableRenderer()){
+		ofDisableArbTex();
+
+		if (ofIsGLProgrammableRenderer()) {
 			std::string threshold_fragment_source = generateThreasholdFrag();
-            std::string threshold_vertex_source = generateThreasholdVert();
-            
+			std::string threshold_vertex_source = generateThreasholdVert();
+
 			threshold_shader_.setupShaderFromSource(GL_VERTEX_SHADER, threshold_vertex_source);
 			threshold_shader_.setupShaderFromSource(GL_FRAGMENT_SHADER, threshold_fragment_source);
 			threshold_shader_.bindDefaults();
@@ -40,7 +49,7 @@ public:
 			quad_.addTexCoord(ofVec2f(0.0f, 0.0f));
 			quad_.addVertex(ofVec3f(-1.0, 1.0, 0.0));
 			quad_.addTexCoord(ofVec2f(0.0f, 1.0f));
-        }
+		}
 		else {
 			std::stringstream src;
 
@@ -66,10 +75,8 @@ public:
 			quad_.addVertex(ofVec3f(0.f, 0.f, 0.f));
 			quad_.addTexCoord(ofVec2f(0.f, 1.f));
 		}
-        
+	}
 
-        
-    }
     
     void setBrightness(const float brightness) { blur_.setBrightness(brightness); }
     void setScale(const float scale) { blur_.setScale(scale); }
@@ -81,6 +88,10 @@ public:
 	void draw(int x, int y, int w, int h) const { result_fbo_.draw(x, y, w, h); }
 
 	void process() {
+		if (!inialized) {
+			ofLogWarning("setup is not called!");
+			return;
+		}
 		ofPushStyle();
 		ofDisableDepthTest();
 
@@ -88,7 +99,7 @@ public:
 		blur_.begin();
 		ofClear(0, 255);
 		threshold_shader_.begin();
-		threshold_shader_.setUniformTexture("src", target_fbo_->getTexture(), 0);
+		threshold_shader_.setUniformTexture("src", target_fbo_.getTexture(), 0);
 		threshold_shader_.setUniform1f("thresh", thresh_);
 		quad_.draw();
 		threshold_shader_.end();
@@ -98,7 +109,7 @@ public:
 		ofEnableBlendMode(OF_BLENDMODE_ADD);
 		result_fbo_.begin();
 		ofClear(0, 255);
-		target_fbo_->draw(0, 0);
+		target_fbo_.draw(0, 0);
 		blur_.draw();
 		result_fbo_.end();
 		ofDisableBlendMode();
@@ -147,12 +158,13 @@ private:
     float thresh_;
     ofMesh quad_;
     ofxBlur blur_;
-	ofFbo *target_fbo_;
+	ofFbo target_fbo_;
     ofFbo result_fbo_;
 	float scale_;
 	float shape_;
 	int passes_;
 	float downsample_;
+	bool inialized;
 };
 
 
